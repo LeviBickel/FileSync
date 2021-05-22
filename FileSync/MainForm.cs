@@ -12,15 +12,32 @@ using System.Diagnostics;
 
 namespace FileSync
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         string defaultSourcePath = "Source Path...";
         string defaultDestinationPath = "Destination Path...";
-        public Form1()
+
+        public MainForm()
         {
             InitializeComponent();
-            textDestinationPath.Text = defaultDestinationPath;
-            textSourcePath.Text = defaultSourcePath;
+            if (Properties.Settings.Default["SourcePath"].ToString() != "")
+            {
+                textSourcePath.Text = Properties.Settings.Default["SourcePath"].ToString();
+            }
+            else
+            {
+                textSourcePath.Text = defaultSourcePath;
+            }
+            if (Properties.Settings.Default["DestinationPath"].ToString() != "")
+            {
+                textDestinationPath.Text = Properties.Settings.Default["DestinationPath"].ToString();
+            }
+            else
+            {
+                textDestinationPath.Text = defaultDestinationPath;
+            }
+            
+            labelError.Text = "";
         }
 
         private void btnSourceBrowse_Click(object sender, EventArgs e)
@@ -97,26 +114,37 @@ namespace FileSync
                     SetMessages("Destination directory doesn't exist", isGUI);
                     return;
                 }
+                if(textSourcePath.Text == textDestinationPath.Text)
+                {
+                    SetMessages("Source and Destination Directories can't match", isGUI);
+                    return;
+                }
+                bool keepSource = true;
+                if (Properties.Settings.Default["FolderPreference"].ToString() == "Destination")
+                {
+                    keepSource = false;
+                }
+                List<string> sourceFiles = Directory.GetFiles(textSourcePath.Text, "*", SearchOption.AllDirectories).ToList();
+                List<string> destinationFiles = Directory.GetFiles(textDestinationPath.Text, "*", SearchOption.AllDirectories).ToList();
 
 
-                var sourceFiles = Directory.GetFiles(textSourcePath.Text);
-                var destinationFiles = Directory.GetFiles(textDestinationPath.Text);
-                var totalFilesToCheck = sourceFiles.Length;
-                var totalFilesLeftToCheck = sourceFiles.Length;
-                bool fileAlreadyChecked = false;
+                var totalFilesToCheck = sourceFiles.Count;
+                var totalFilesLeftToCheck = sourceFiles.Count;
+                
                 var currentFile = 0;
                 if (isGUI)
                 {
-                    labelTotalFiles.Text = sourceFiles.Length.ToString();
+                    labelTotalFiles.Text = sourceFiles.Count.ToString();
                 }
 
-
+                
                 //Loop through each file source file and compare to the destination file.
-                for (int i = 0; i < sourceFiles.Length; i++)
+                for (int i = 0; i < sourceFiles.Count; i++)
                 {
+                    bool fileAlreadyChecked = false;
                     currentFile++;
                     var fileSource = File.ReadAllBytes(sourceFiles[i]);
-                    byte[] fileDestinationBytes = null;
+                    byte[] fileDestinationBytes = new byte[] { };
                     var fileDestination = "";
                     //Get the destination file for comparison.
                     foreach (var file in destinationFiles)
@@ -129,54 +157,69 @@ namespace FileSync
                     }
 
                     //If the file doesn't exist at the destination, copy it.
-                    if (fileDestination == "" && !fileAlreadyChecked)
+                    if (fileDestination == "")
                     {
-                        File.Copy(sourceFiles[i], textDestinationPath.Text + sourceFiles[i].Substring(sourceFiles[i].LastIndexOf(@"\")));
+                        //Handle the location to copy to.
+                        var destinationPath = textDestinationPath.Text + sourceFiles[i].Remove(0, textSourcePath.Text.Length);
+                        var destinationDirectory = destinationPath.Remove(destinationPath.LastIndexOf(@"\"));
+                        if (!Directory.Exists(destinationDirectory))
+                        {
+                            Directory.CreateDirectory(destinationDirectory);
+                        }
+                        File.Copy(sourceFiles[i], destinationPath);
+                        fileDestination = destinationPath;
                         fileAlreadyChecked = true;
                     }
 
-                    //Compare the files
-                    if (fileSource.Length == fileDestinationBytes.Length && !fileAlreadyChecked)
+                    if (!fileAlreadyChecked)
                     {
-                        for (int x = 0; x < fileSource.Length; x++)
+                        //Compare the files
+                        if (fileSource.Length == fileDestinationBytes.Length)
                         {
-                            if (fileSource[x] != fileDestinationBytes[x])
+                            for (int x = 0; x < fileSource.Length; x++)
                             {
-                                //Contents are not equal. Move the source to destination if newer.
-
-                                if (File.GetLastWriteTimeUtc(sourceFiles[i]) > File.GetLastWriteTimeUtc(fileDestination))
+                                if (fileSource[x] != fileDestinationBytes[x])
                                 {
-                                    //The source file is newer... Lets move the file.
-                                    File.Delete(fileDestination);
-                                    File.Copy(sourceFiles[i], fileDestination);
+                                    //Contents are not equal. Move the source to destination if newer.
+                                    if (keepSource)
+                                    {
+                                        if (File.GetLastWriteTimeUtc(sourceFiles[i]) > File.GetLastWriteTimeUtc(fileDestination))
+                                        {
+                                            //The source file is newer... Lets move the file.
+                                            File.Delete(fileDestination);
+                                            File.Copy(sourceFiles[i], fileDestination);
+                                        }
+                                    }
+                                    fileAlreadyChecked = true;
+
                                 }
-                                fileAlreadyChecked = true;
+
 
                             }
-
+                            //Files are the same. we can skip this file.
+                            fileAlreadyChecked = true;
 
                         }
-                        //Files are the same. we can skip this file.
-                        fileAlreadyChecked = true;
-
+                        //File length is not the same. Check if the source is newer, if so, move the source to the destination.
+                        if (File.GetLastWriteTimeUtc(sourceFiles[i]) > File.GetLastWriteTimeUtc(fileDestination) && !fileAlreadyChecked)
+                        {
+                            //The source file is newer... Lets move the file.
+                            if (keepSource)
+                            {
+                                File.Delete(fileDestination);
+                                File.Copy(sourceFiles[i], fileDestination);
+                            }
+                            fileAlreadyChecked = true;
+                        }
                     }
-                    //File length is not the same. Check if the source is newer, if so, move the source to the destination.
-                    if (File.GetLastWriteTimeUtc(sourceFiles[i]) > File.GetLastWriteTimeUtc(fileDestination) && !fileAlreadyChecked)
-                    {
-                        //The source file is newer... Lets move the file.
-
-                        File.Delete(fileDestination);
-                        File.Copy(sourceFiles[i], fileDestination);
-                        fileAlreadyChecked = true;
-                    }
-
 
                     totalFilesLeftToCheck--;
                     //update the progressbar
                     if (isGUI)
                     {
                         int increase = currentFile - totalFilesLeftToCheck;
-                        progressBar.Value = increase / totalFilesToCheck * 100;
+                        
+                        progressbarToolstrip.Value = increase / totalFilesToCheck * 100;
                     }
                 }
                 SetMessages("Successfully synchronized, "+textSourcePath.Text+" with " + textDestinationPath.Text+". "+totalFilesToCheck+" files compared.", isGUI, EventLogEntryType.Information);
@@ -231,6 +274,24 @@ namespace FileSync
             //Kill any threads here if created:
 
             Application.Exit(); //Remove this once we move to a background worker that keeps the folders synchronized.
+        }
+
+        private void ShowSettings()
+        {
+            SettingsForm settingsForm = new SettingsForm();
+            settingsForm.Show();
+        }
+
+        private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+            if(e.ClickedItem == Settings)
+            {
+                ShowSettings();
+            }
+            else if (e.ClickedItem == ExitButton)
+            {
+                Application.Exit();
+            }
         }
     }
 }
