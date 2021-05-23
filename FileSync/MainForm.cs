@@ -241,8 +241,7 @@ namespace FileSync
                                         if (File.GetLastWriteTimeUtc(sourceFiles[i]) > File.GetLastWriteTimeUtc(fileDestination))
                                         {
                                             //The source file is newer... Lets move the file.
-                                            File.Delete(fileDestination);
-                                            File.Copy(sourceFiles[i], fileDestination);
+                                            File.Copy(sourceFiles[i], fileDestination,true);
                                         }
                                     }
                                     fileAlreadyChecked = true;
@@ -261,8 +260,7 @@ namespace FileSync
                             //The source file is newer... Lets move the file.
                             if (keepSource)
                             {
-                                File.Delete(fileDestination);
-                                File.Copy(sourceFiles[i], fileDestination);
+                                File.Copy(sourceFiles[i], fileDestination, true);
                             }
                             fileAlreadyChecked = true;
                         }
