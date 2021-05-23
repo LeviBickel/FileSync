@@ -45,6 +45,7 @@ namespace FileSync
             this.labelFilesChecked = new System.Windows.Forms.ToolStripLabel();
             this.labelTotalFiles = new System.Windows.Forms.ToolStripLabel();
             this.labelError = new System.Windows.Forms.Label();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.toolStrip1.SuspendLayout();
             this.toolStrip2.SuspendLayout();
             this.SuspendLayout();
@@ -244,6 +245,7 @@ namespace FileSync
         private System.Windows.Forms.Label labelError;
         private System.Windows.Forms.ToolStripLabel labelFilesChecked;
         private System.Windows.Forms.ToolStripLabel labelTotalFiles;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 
