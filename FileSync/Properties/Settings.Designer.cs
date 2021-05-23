@@ -70,5 +70,17 @@ namespace FileSync.Properties {
                 this["RealtimeSync"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("5")]
+        public string SyncInterval {
+            get {
+                return ((string)(this["SyncInterval"]));
+            }
+            set {
+                this["SyncInterval"] = value;
+            }
+        }
     }
 }

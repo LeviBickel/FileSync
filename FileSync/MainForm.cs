@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using System.IO;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace FileSync
 {
@@ -16,10 +13,15 @@ namespace FileSync
     {
         string defaultSourcePath = "Source Path...";
         string defaultDestinationPath = "Destination Path...";
+        bool ballonTipShown = false;
+        int interval;
 
         public MainForm()
         {
             InitializeComponent();
+
+            //Set initial settings here from the settings file.
+
             if (Properties.Settings.Default["SourcePath"].ToString() != "")
             {
                 textSourcePath.Text = Properties.Settings.Default["SourcePath"].ToString();
@@ -28,6 +30,7 @@ namespace FileSync
             {
                 textSourcePath.Text = defaultSourcePath;
             }
+            
             if (Properties.Settings.Default["DestinationPath"].ToString() != "")
             {
                 textDestinationPath.Text = Properties.Settings.Default["DestinationPath"].ToString();
@@ -38,6 +41,48 @@ namespace FileSync
             }
             
             labelError.Text = "";
+            notifyIcon.Icon = Properties.Resources.AppIcon;
+            notifyIcon.ContextMenuStrip.Items.Add("Open", Properties.Resources.Open1, Open_Click);
+            notifyIcon.ContextMenuStrip.Items.Add("Start Synchronization", Properties.Resources.Synchronize, SynchronizeNow_Click);
+            notifyIcon.ContextMenuStrip.Items.Add("Settings", Properties.Resources.Settings1, ContextMenuSettingsButton_Click);
+            notifyIcon.ContextMenuStrip.Items.Add("Exit", Properties.Resources.Exit1, Exit_Click);
+            notifyIcon.Visible = true;
+
+            backgroundWorker1.DoWork += StartTaskingTimer;
+            backgroundWorker1.WorkerSupportsCancellation = true;
+            backgroundWorker1.RunWorkerAsync();
+        }
+
+        private void StartTaskingTimer(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            interval = SetInterval();
+            // Create an AutoResetEvent to signal the timeout threshold in the
+            // timer callback has been reached.
+            var autoEvent = new AutoResetEvent(false);
+            //var statusChecker = new StatusChecker(5);
+
+            // creates a Timer to call CheckStatus() with autoEvent as argument,
+            // starting with 1 minute delay and calling every 5 minutes.
+            var stateTimer = new System.Threading.Timer(CallFileSync, autoEvent, 60000, interval);
+            autoEvent.WaitOne();
+        }
+        public int SetInterval()
+        {
+            var syncInterval = Properties.Settings.Default["SyncInterval"].ToString();
+            interval = Convert.ToInt32(syncInterval);
+            interval = interval * 60000;
+            return interval;
+        }
+
+        private void CallFileSync(Object stateInfo)
+        {
+            SetInterval();
+            if(Properties.Settings.Default["RealtimeSync"].ToString().ToLower() == "true")
+            {
+                FileComparison();
+            }
+            else { return; }
+            
         }
 
         private void btnSourceBrowse_Click(object sender, EventArgs e)
@@ -104,6 +149,16 @@ namespace FileSync
         {
             try
             {
+                if (!isGUI)
+                {
+                    if(Properties.Settings.Default["SourcePath"].ToString() == "" || Properties.Settings.Default["DestinationPath"].ToString() == "")
+                    {
+                        SetMessages("Source Path and Destination Path not set in the settings.");
+                        return;
+                    }
+                    textSourcePath.Text = Properties.Settings.Default["SourcePath"].ToString();
+                    textDestinationPath.Text = Properties.Settings.Default["DestinationPath"].ToString();
+                }
                 if (!Directory.Exists(textSourcePath.Text))
                 {
                     SetMessages("Source directory doesn't exist", isGUI);
@@ -269,13 +324,6 @@ namespace FileSync
             eventLog.Close();
         }
 
-        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            //Kill any threads here if created:
-
-            Application.Exit(); //Remove this once we move to a background worker that keeps the folders synchronized.
-        }
-
         private void ShowSettings()
         {
             SettingsForm settingsForm = new SettingsForm();
@@ -288,10 +336,54 @@ namespace FileSync
             {
                 ShowSettings();
             }
-            else if (e.ClickedItem == ExitButton)
+        }
+
+        private void MainForm_SizeChanged(object sender, EventArgs e)
+        {
+            bool MousePointerNotOnTaskbar = Screen.GetWorkingArea(this).Contains(Cursor.Position);
+
+            if(this.WindowState == FormWindowState.Minimized && MousePointerNotOnTaskbar)
             {
-                Application.Exit();
+                if (!ballonTipShown)
+                {
+                    notifyIcon.BalloonTipText = "FileSync will continue synchronizing in the background.";
+                    notifyIcon.ShowBalloonTip(500);
+                    ballonTipShown = true;
+                }
+                this.ShowInTaskbar = false;
+                //notifyIcon.Visible = true;
+
             }
+
+
+        }
+
+        private void Exit_Click(object sender, EventArgs e)
+        {
+            backgroundWorker1.CancelAsync();
+            backgroundWorker1.Dispose();
+            Application.Exit();
+        }
+        private void ContextMenuSettingsButton_Click(object sender, EventArgs e)
+        {
+            ShowSettings();
+        }
+
+        private void Open_Click(object sender, EventArgs e)
+        {
+            this.WindowState = FormWindowState.Normal;
+            this.ShowInTaskbar = true;
+        }
+
+        private void SynchronizeNow_Click(object sender, EventArgs e)
+        {
+            FileComparison();
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            e.Cancel = true;
+            this.WindowState = FormWindowState.Minimized;
         }
     }
 }

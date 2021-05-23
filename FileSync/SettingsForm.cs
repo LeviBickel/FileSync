@@ -1,11 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace FileSync
@@ -44,6 +37,11 @@ namespace FileSync
             else
             {
                 checkBoxRealTime.Checked = true;
+            }
+
+            if(Properties.Settings.Default["SyncInterval"].ToString() != "")
+            {
+                textBoxSynchronizationInterval.Text = Properties.Settings.Default["SyncInterval"].ToString();
             }
 
         }
@@ -138,6 +136,16 @@ namespace FileSync
             Properties.Settings.Default["SourcePath"] = textBoxSettingSourcePath.Text;
             Properties.Settings.Default["DestinationPath"] = textBoxDestinationPath.Text;
             Properties.Settings.Default["RealtimeSync"] = checkBoxRealTime.Checked;
+            string Interval;
+            if (textBoxSynchronizationInterval.Text.Contains("."))
+            {
+                Interval = textBoxSynchronizationInterval.Text.Replace(".", "");
+            }
+            else
+            {
+                Interval = textBoxSynchronizationInterval.Text;
+            }
+            Properties.Settings.Default["SyncInterval"] = Interval;
             try
             {
                 Properties.Settings.Default.Save();
@@ -148,6 +156,21 @@ namespace FileSync
                 MessageBox.Show(ex.ToString(), "Error", MessageBoxButtons.OK);
             }
             
+        }
+
+        private void textBoxSynchronizationInterval_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) &&
+        (e.KeyChar != '.'))
+            {
+                e.Handled = true;
+            }
+
+            // only allow one decimal point
+            if ((e.KeyChar == '.') && ((sender as TextBox).Text.IndexOf('.') > -1))
+            {
+                e.Handled = true;
+            }
         }
     }
 }
