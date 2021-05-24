@@ -145,8 +145,11 @@ namespace FileSync
 
             textSourcePath.Text = defaultSourcePath;
         }
+        
         private void FileComparison(bool isGUI = false)
         {
+            var sourcePath = "";
+            var destinationPath = "";
             try
             {
                 if (!isGUI)
@@ -156,20 +159,26 @@ namespace FileSync
                         SetMessages("Source Path and Destination Path not set in the settings.");
                         return;
                     }
-                    textSourcePath.Text = Properties.Settings.Default["SourcePath"].ToString();
-                    textDestinationPath.Text = Properties.Settings.Default["DestinationPath"].ToString();
+                    sourcePath = Properties.Settings.Default["SourcePath"].ToString();
+                    destinationPath = Properties.Settings.Default["DestinationPath"].ToString();
+
                 }
-                if (!Directory.Exists(textSourcePath.Text))
+                else
+                {
+                    sourcePath = textSourcePath.Text;
+                    destinationPath = textDestinationPath.Text;
+                }
+                if (!Directory.Exists(sourcePath))
                 {
                     SetMessages("Source directory doesn't exist", isGUI);
                     return;
                 }
-                if (!Directory.Exists(textDestinationPath.Text))
+                if (!Directory.Exists(destinationPath))
                 {
                     SetMessages("Destination directory doesn't exist", isGUI);
                     return;
                 }
-                if(textSourcePath.Text == textDestinationPath.Text)
+                if(sourcePath == destinationPath)
                 {
                     SetMessages("Source and Destination Directories can't match", isGUI);
                     return;
@@ -179,8 +188,8 @@ namespace FileSync
                 {
                     keepSource = false;
                 }
-                List<string> sourceFiles = Directory.GetFiles(textSourcePath.Text, "*", SearchOption.AllDirectories).ToList();
-                List<string> destinationFiles = Directory.GetFiles(textDestinationPath.Text, "*", SearchOption.AllDirectories).ToList();
+                List<string> sourceFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories).ToList();
+                List<string> destinationFiles = Directory.GetFiles(destinationPath, "*", SearchOption.AllDirectories).ToList();
 
 
                 var totalFilesToCheck = sourceFiles.Count;
@@ -215,14 +224,14 @@ namespace FileSync
                     if (fileDestination == "")
                     {
                         //Handle the location to copy to.
-                        var destinationPath = textDestinationPath.Text + sourceFiles[i].Remove(0, textSourcePath.Text.Length);
-                        var destinationDirectory = destinationPath.Remove(destinationPath.LastIndexOf(@"\"));
+                        var fileDestinationPath = destinationPath + sourceFiles[i].Remove(0, sourcePath.Length);
+                        var destinationDirectory = fileDestinationPath.Remove(fileDestinationPath.LastIndexOf(@"\"));
                         if (!Directory.Exists(destinationDirectory))
                         {
                             Directory.CreateDirectory(destinationDirectory);
                         }
-                        File.Copy(sourceFiles[i], destinationPath);
-                        fileDestination = destinationPath;
+                        File.Copy(sourceFiles[i], fileDestinationPath);
+                        fileDestination = fileDestinationPath;
                         fileAlreadyChecked = true;
                     }
 
@@ -275,7 +284,7 @@ namespace FileSync
                         progressbarToolstrip.Value = increase / totalFilesToCheck * 100;
                     }
                 }
-                SetMessages("Successfully synchronized, "+textSourcePath.Text+" with " + textDestinationPath.Text+". "+totalFilesToCheck+" files compared.", isGUI, EventLogEntryType.Information);
+                SetMessages("Successfully synchronized, "+sourcePath+" with " + destinationPath+". "+totalFilesToCheck+" files compared.", isGUI, EventLogEntryType.Information);
             }
             catch(Exception ex)
             {
