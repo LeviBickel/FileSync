@@ -30,3 +30,7 @@ You will see that the event log contains some text about a description not being
 
 Everytime the comparision and transfer runs there will be an event log message recorded whether the run was successful or not.
 
+## Notes:
+
+It is common for Windows to recognize the application as not responding for really large directories or during slow connections to a network drive. This is an expected behavior. 
+
