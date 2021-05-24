@@ -1,6 +1,6 @@
 # FileSync
 
-Simple directory comparison tool with realtime synchronization enabled. Built in C#.
+Simple directory comparison tool with automatic synchronization enabled. Built in C#.
 
 ## Installation:
 
