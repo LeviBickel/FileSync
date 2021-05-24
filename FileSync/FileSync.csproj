@@ -10,6 +10,7 @@
     <Company />
     <PackageIcon>AppIcon.png</PackageIcon>
     <NeutralLanguage>en</NeutralLanguage>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>

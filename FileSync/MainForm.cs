@@ -312,20 +312,16 @@ namespace FileSync
             // Create an instance of EventLog
             EventLog eventLog = new EventLog();
 
-            // Check if the event source exists. If not create it.
-            if (!EventLog.SourceExists("FileSync"))
-            {
-                EventLog.CreateEventSource("FileSync", "Application");
-            }
+            
 
             // Set the source name for writing log entries.
-            eventLog.Source = "FileSync";
+            eventLog.Source = "Application";
 
             // Create an event ID to add to the event log
-            int eventID = 8;
-
+            int eventID = 101;
+            
             // Write an entry to the event log.
-            eventLog.WriteEntry(errorMessage, eventLogEntryType, eventID);
+            eventLog.WriteEntry(errorMessage, eventLogEntryType, eventID,1);
 
             // Close the Event Log
             eventLog.Close();
