@@ -34,5 +34,5 @@ Everytime the comparision and transfer runs there will be an event log message r
 
 It is common for Windows to recognize the application as not responding for really large directories or during slow connections to a network drive. This is an expected behavior. 
 
-The time interval won't update until there has been one run at the current setting however, manual runs could be done in the meantime while waiting for the update to take place.
+The time interval won't update until there has been one run at the current setting however, manual runs could be done in the meantime while waiting for the update to take place. The other option would be to exit FileSync and then relaunch it which will force it to the new saved settings.
 
